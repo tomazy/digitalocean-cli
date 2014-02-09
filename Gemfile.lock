@@ -1,6 +1,7 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    coderay (1.1.0)
     digitalocean (1.0.1)
       faraday
       faraday_middleware
@@ -10,8 +11,14 @@ GEM
       multipart-post (~> 1.2.0)
     faraday_middleware (0.9.0)
       faraday (>= 0.7.4, < 0.9)
+    method_source (0.8.2)
     multipart-post (1.2.0)
+    pry (0.9.12.6)
+      coderay (~> 1.0)
+      method_source (~> 0.8)
+      slop (~> 3.4)
     recursive-open-struct (0.4.5)
+    slop (3.4.7)
     terminal-table (1.4.5)
     thor (0.18.1)
 
@@ -21,5 +28,6 @@ PLATFORMS
 DEPENDENCIES
   digitalocean
   dotenv
+  pry
   terminal-table
   thor

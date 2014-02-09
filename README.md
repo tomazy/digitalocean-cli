@@ -3,7 +3,7 @@ Digital Ocean Client
 
 1. `bundle install`
 1. create `./.env` file with Digital Ocean credentials
-1. `irb -r ./do-cli.rb`
+1. `./do-cli`
 
         Commands:
           DO.help

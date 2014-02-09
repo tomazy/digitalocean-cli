@@ -199,7 +199,7 @@ class DO
           event = get_event(id)
           puts "       Event: ##{event.id}, #{event.percentage || 0}%"
           break if event.action_status == 'done'
-          sleep 5
+          sleep 1
         end
       end
     end
