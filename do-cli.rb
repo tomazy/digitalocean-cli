@@ -83,6 +83,10 @@ module DO
       )
     end
 
+    def droplet_reboot(droplet_id=nil)
+      watch_event(validate_response(Digitalocean::Droplet.reboot(droplet_id || select(:droplets)), :event_id))
+    end
+
     def droplet_power_off(droplet_id=nil)
       watch_event(validate_response(Digitalocean::Droplet.power_off(droplet_id || select(:droplets)), :event_id))
     end
