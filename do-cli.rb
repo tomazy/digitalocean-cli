@@ -14,7 +14,7 @@ Digitalocean.api_key   = ENV['DIGITALOCEAN_API_KEY']
 
 Thread.abort_on_exception = true
 
-class DO
+module DO
   COLUMNS_MAP = {
     snapshots: [:id, :name],
     sizes: [:id, :name],
