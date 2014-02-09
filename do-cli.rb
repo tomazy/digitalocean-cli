@@ -12,6 +12,8 @@ Dotenv.load
 Digitalocean.client_id = ENV['DIGITALOCEAN_CLIENT_ID']
 Digitalocean.api_key   = ENV['DIGITALOCEAN_API_KEY']
 
+Thread.abort_on_exception = true
+
 class DO
   COLUMNS_MAP = {
     snapshots: [:id, :name],
@@ -37,36 +39,98 @@ class DO
       print_collection :snapshots, force
     end
 
+    def droplet(droplet_id=nil)
+      print_item get_droplet(droplet_id), 'droplet'
+    end
+
     def droplet_new
-      print_response Digitalocean::Droplet.create(
-        name:               read_value('Droplet name', 'work'),
-        size_id:            select(:sizes),
-        image_id:           select(:snapshots),
-        region_id:          select(:regions),
-        ssh_key_ids:        load_all_ssh_key_ids,
-        private_networking: false,
-        backup_enabled:     false,
+      watch_event(
+        validate_response(
+          Digitalocean::Droplet.create(
+            name:               read_value('Droplet name', 'work'),
+            size_id:            select(:sizes),
+            image_id:           select(:snapshots),
+            region_id:          select(:regions),
+            ssh_key_ids:        load_all_ssh_key_ids,
+            private_networking: false,
+            backup_enabled:     false,
+          ),
+          :droplet
+        ).event_id
       )
     end
 
-    def droplet_destroy
-      print_response Digitalocean::Droplet.destroy select(:droplets)
+    def droplet_destroy(droplet_id=nil)
+      watch_event(
+        validate_response(
+          Digitalocean::Droplet.destroy(
+            droplet_id || select(:droplets)
+          ),
+          :event_id
+        )
+      )
     end
 
-    def droplet_take_snapshot
-      print_response Digitalocean::Droplet.snapshot select(:droplets), name: read_value('Name', Date.today.strftime('%d/%m'))
+    def droplet_snapshot(droplet_id=nil, name=nil)
+      watch_event(
+        validate_response(
+          Digitalocean::Droplet.snapshot(
+            droplet_id || select(:droplets),
+            name: name || read_value('Name', default_snapshot_name)
+          ),
+          :event_id
+        )
+      )
     end
 
-    def droplet_power_off
-      print_response Digitalocean::Droplet.power_off select(:droplets)
+    def droplet_power_off(droplet_id=nil)
+      watch_event(validate_response(Digitalocean::Droplet.power_off(droplet_id || select(:droplets)), :event_id))
+    end
+
+    def droplet_shutdown(droplet_id=nil)
+      watch_event(validate_response(Digitalocean::Droplet.shutdown(droplet_id || select(:droplets)), :event_id))
+    end
+
+    def droplet_snapshot_and_destroy
+      droplet_id = select(:droplets)
+
+      puts "----- power off"
+      droplet_power_off(droplet_id).join
+
+      puts "----- taking snapshot"
+      droplet_snapshot(droplet_id, default_snapshot_name).join
+
+      puts "----- waiting for droplet to become unlocked"
+      wait_until_droplet_unlocked(droplet_id).join
+
+      puts "----- power off"
+      droplet_power_off(droplet_id).join
+
+      puts "----- waiting for droplet to become unlocked"
+      wait_until_droplet_unlocked(droplet_id).join
+
+      puts "----- destroy"
+      droplet_destroy(droplet_id).join
+
+      puts "----- DONE!!!"
     end
 
     def snapshot_destroy
-      print_response Digitalocean::Image.destroy select(:snapshots)
+      puts validate_response(Digitalocean::Image.destroy(select(:snapshots)), :status)
     end
 
     def event(id)
-      puts Digitalocean::Event.find(id).inspect
+      print_item get_event(id), 'Event'
+    end
+
+    def wait_until_droplet_unlocked(droplet_id)
+      Thread.new do
+        loop do
+          droplet = get_droplet(droplet_id)
+          break unless droplet.locked
+          sleep 1
+        end
+      end
     end
 
     def help
@@ -74,16 +138,19 @@ class DO
         Commands:
           DO.help
 
+          DO.droplet [ID]
           DO.droplet_new
-          DO.droplet_destroy
-          DO.droplet_take_snapshot
-          DO.droplet_power_off
-          DO.snapshot_destroy
+          DO.droplet_destroy [ID]
+          DO.droplet_snapshot [ID]
+          DO.droplet_shutdown [ID]
+          DO.droplet_power_off [ID]
+          DO.droplet_snapshot_and_destroy
+          DO.snapshot_destroy [ID]
 
-          DO.droplets
-          DO.regions
-          DO.sizes
-          DO.snapshots
+          DO.droplets(force=false)
+          DO.regions(force=false)
+          DO.sizes(force=false)
+          DO.snapshots(force=false)
 
           DO.event ID
 
@@ -108,6 +175,35 @@ class DO
       cache(:regions, force) { Digitalocean::Region.all.regions }
     end
 
+    def get_event(id)
+      validate_response Digitalocean::Event.find(id), :event
+    end
+
+    def get_droplet(droplet_id=nil)
+      validate_response(Digitalocean::Droplet.find(droplet_id || select(:droplets)), :droplet)
+    end
+
+    def default_snapshot_name
+      Date.today.strftime('%d/%m')
+    end
+
+    def validate_response(resp, name)
+      return resp.public_send(name) if resp.status == 'OK'
+      raise resp.message
+    end
+
+    def watch_event(id)
+      puts "Watching event ##{id}"
+      Thread.new do
+        loop do
+          event = get_event(id)
+          puts "       Event: ##{event.id}, #{event.percentage || 0}%"
+          break if event.action_status == 'done'
+          sleep 5
+        end
+      end
+    end
+
     def table(options)
       Terminal::Table.new options
     end
@@ -122,6 +218,14 @@ class DO
       list = send "get_#{collection}", force
       print_table collection.upcase, list, *COLUMNS_MAP[collection]
       yield list if block_given?
+    end
+
+    def print_item(item, title=nil)
+      headings = ['Key', 'Value']
+      rows = item.to_h.to_a
+
+      t = table headings: headings, rows: rows, title: title
+      puts t
     end
 
     def select(collection)
@@ -150,10 +254,6 @@ class DO
       nr = read_value 'Select from list', 1
       idx = nr.to_i - 1
       list[idx]
-    end
-
-    def print_response resp
-      puts resp.inspect
     end
 
     def read_value(prompt, default = nil)
