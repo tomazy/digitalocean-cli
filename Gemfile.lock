@@ -1,14 +1,10 @@
-PATH
-  remote: /home/tomazy/workspace/digitalocean
-  specs:
-    digitalocean (1.0.0.rc.2)
-      faraday
-      faraday_middleware
-      recursive-open-struct
-
 GEM
   remote: https://rubygems.org/
   specs:
+    digitalocean (1.0.1)
+      faraday
+      faraday_middleware
+      recursive-open-struct
     dotenv (0.9.0)
     faraday (0.8.9)
       multipart-post (~> 1.2.0)
@@ -23,7 +19,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  digitalocean!
+  digitalocean
   dotenv
   terminal-table
   thor
