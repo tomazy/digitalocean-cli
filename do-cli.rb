@@ -205,7 +205,7 @@ module DO
 
     def default_snapshot_name(droplet_id)
       name = get_droplet(droplet_id)['name']
-      name + "-" + Time.now.strftime('%Y/%d/%m %H:%M')
+      name + "-" + Time.now.strftime('%Y/%m/%d %H:%M')
     end
 
     def validate_response(resp, name)
