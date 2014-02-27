@@ -137,6 +137,21 @@ module DO
       end
     end
 
+    def store_ip_in_dot_file(droplet_id=nil)
+      droplet = get_droplet(droplet_id || select(:droplets))
+
+      name = droplet['name'].downcase
+      ip   = droplet['ip_address']
+
+      file_name = File.expand_path "~/.#{name}-ip"
+      env_var_name = name.upcase
+
+      File.open(file_name, "w") do |f|
+        f.write "#{env_var_name}_IP=#{ip}\n"
+      end
+      file_name
+    end
+
     def help
       puts """
         Commands:
@@ -156,8 +171,9 @@ module DO
           DO.sizes(force=false)
           DO.snapshots(force=false)
 
-          DO.event ID
+          DO.store_ip_in_dot_file
 
+          DO.event ID
       """
     end
 
