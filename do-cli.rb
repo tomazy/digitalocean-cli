@@ -1,4 +1,3 @@
-#!/usr/bin/env ruby
 require 'rubygems'
 require 'bundler/setup'
 
@@ -72,11 +71,12 @@ module DO
     end
 
     def droplet_snapshot(droplet_id=nil, name=nil)
+      droplet_id ||= select(:droplets)
       watch_event(
         validate_response(
           Digitalocean::Droplet.snapshot(
-            droplet_id || select(:droplets),
-            name: name || read_value('Name', default_snapshot_name)
+            droplet_id,
+            name: name || read_value('Name', default_snapshot_name(droplet_id))
           ),
           :event_id
         )
@@ -102,7 +102,7 @@ module DO
       droplet_power_off(droplet_id).join
 
       puts "----- taking snapshot"
-      droplet_snapshot(droplet_id, default_snapshot_name).join
+      droplet_snapshot(droplet_id, default_snapshot_name(droplet_id)).join
 
       puts "----- waiting for droplet to become unlocked"
       wait_until_droplet_unlocked(droplet_id).join
@@ -187,8 +187,9 @@ module DO
       validate_response(Digitalocean::Droplet.find(droplet_id || select(:droplets)), :droplet)
     end
 
-    def default_snapshot_name
-      Date.today.strftime('%d/%m')
+    def default_snapshot_name(droplet_id)
+      name = get_droplet(droplet_id)['name']
+      name + "-" + Time.now.strftime('%Y/%d/%m %H:%M')
     end
 
     def validate_response(resp, name)
