@@ -119,6 +119,10 @@ module DO
       puts "----- DONE!!!"
     end
 
+    def snapshot(snapshot_id=nil)
+      print_item get_snapshot(snapshot_id), 'Snapshot'
+    end
+
     def snapshot_destroy
       puts validate_response(Digitalocean::Image.destroy(select(:snapshots)), :status)
     end
@@ -164,6 +168,8 @@ module DO
           DO.droplet_shutdown [ID]
           DO.droplet_power_off [ID]
           DO.droplet_snapshot_and_destroy
+
+          DO.snapshot [ID]
           DO.snapshot_destroy [ID]
 
           DO.droplets(force=false)
@@ -201,6 +207,10 @@ module DO
 
     def get_droplet(droplet_id=nil)
       validate_response(Digitalocean::Droplet.find(droplet_id || select(:droplets)), :droplet)
+    end
+
+    def get_snapshot(snapshot_id=nil)
+      validate_response(Digitalocean::Image.find(snapshot_id || select(:snapshots)), :image)
     end
 
     def default_snapshot_name(droplet_id)
