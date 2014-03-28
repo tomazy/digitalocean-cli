@@ -7,11 +7,11 @@ GEM
     coderay (1.1.0)
     columnize (0.3.6)
     debugger-linecache (1.2.0)
-    digitalocean (1.0.2)
+    digitalocean (1.0.4)
       faraday (~> 0.8.9)
       faraday_middleware (~> 0.9.0)
       recursive-open-struct (~> 0.4.5)
-    dotenv (0.9.0)
+    dotenv (0.10.0)
     faraday (0.8.9)
       multipart-post (~> 1.2.0)
     faraday_middleware (0.9.0)
@@ -26,7 +26,7 @@ GEM
       byebug (~> 2.7)
       pry (~> 0.9.12)
     recursive-open-struct (0.4.5)
-    slop (3.4.7)
+    slop (3.5.0)
     terminal-table (1.4.5)
 
 PLATFORMS
