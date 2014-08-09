@@ -148,10 +148,9 @@ module DO
       ip   = droplet['ip_address']
 
       file_name = File.expand_path "~/.#{name}-ip"
-      env_var_name = name.upcase
 
       File.open(file_name, "w") do |f|
-        f.write "#{env_var_name}_IP=#{ip}\n"
+        f.write "DO_SERVER=#{ip}\n"
       end
       file_name
     end

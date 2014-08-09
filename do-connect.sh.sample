@@ -1,0 +1,22 @@
+#!/bin/bash
+
+set -e
+set -x
+
+source ~/.work-ip
+
+USER_NAME=john
+SSH_PORT=443
+SSH_CMD="ssh -p $SSH_PORT $DO_SERVER -l $USER_NAME -o ServerAliveInterval=30"
+
+# remove previous key from known_hosts
+ssh-keygen -R $DO_SERVER
+
+# setup tunnes
+$SSH_CMD -f \
+  -L 5901:localhost:5901 `# VNC port`    \
+  -L 3000:localhost:3000 `# dev server ` \
+  -N
+
+# open ssh session
+$SSH_CMD
